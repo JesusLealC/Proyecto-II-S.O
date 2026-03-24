@@ -1,8 +1,15 @@
 package scheduler;
 
-import java.util.List;
+import edd.CustomLinkedList;
+import process.PCB;
 
 public interface DiskScheduler {
-    List<Integer> calculateRoute(List<Integer> requestedBlocks, int currentPosition);
+    
+    void encolarSolicitud(PCB proceso);
+    
+    PCB procesarSiguiente(int posicionActualCabezal);
+    
+    CustomLinkedList<Integer> calculateRoute(CustomLinkedList<Integer> requestedBlocks, int currentPosition);
+    
     String getAlgorithmName();
 }

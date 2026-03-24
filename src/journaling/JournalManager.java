@@ -4,94 +4,64 @@
  */
 
 
-/**
- *
- * @author jleal
- */
-package journaling;
 
+package journaling;
 import edd.CustomLinkedList;
-import edd.CustomQueue;
+import filesystem.FileSystemManager;
 import util.OSLogger;
 
 public class JournalManager {
-    private final CustomQueue<JournalEntry> pendingEntries;
-    private final CustomLinkedList<JournalEntry> historyEntries;
+    private CustomLinkedList<JournalEntry> log;
+    private boolean isCrashed;
 
     public JournalManager() {
-        this.pendingEntries = new CustomQueue<>();
-        this.historyEntries = new CustomLinkedList<>();
+        this.log = new CustomLinkedList<>();
+        this.isCrashed = false;
     }
 
-    public JournalEntry registerPendingOperation(String operationType, String fileName) {
-        return registerPendingOperation(operationType, fileName, "");
-    }
-
-    public JournalEntry registerPendingOperation(String operationType, String fileName, String details) {
-        JournalEntry entry = new JournalEntry(operationType, fileName, JournalEntry.STATUS_PENDING, details);
-        pendingEntries.enqueue(entry);
-        historyEntries.addLast(entry);
-        OSLogger.log("JournalManager", "Operación registrada en journal: " + operationType + " - " + fileName);
+    public JournalEntry logOperation(String operation, String fileName, int firstBlockId) {
+        JournalEntry entry = new JournalEntry(operation, fileName, firstBlockId);
+        log.addLast(entry);
+        OSLogger.log("Journal", "Registrado: " + entry.toString());
         return entry;
     }
 
-    public boolean completeOperation(String operationType, String fileName) {
-        JournalEntry entry = findLatestEntry(operationType, fileName, JournalEntry.STATUS_PENDING);
-        if (entry == null) {
-            return false;
-        }
-
-        entry.setStatus(JournalEntry.STATUS_COMPLETED);
-        rebuildPendingQueue();
-        OSLogger.log("JournalManager", "Operación completada: " + operationType + " - " + fileName);
-        return true;
+    public void commitOperation(JournalEntry entry) {
+        if (isCrashed) return; // Si hay fallo, no se confirma
+        entry.commit();
+        OSLogger.log("Journal", "Confirmado: " + entry.toString());
     }
 
-    public boolean failOperation(String operationType, String fileName, String details) {
-        JournalEntry entry = findLatestEntry(operationType, fileName, JournalEntry.STATUS_PENDING);
-        if (entry == null) {
-            return false;
-        }
-
-        entry.setStatus(JournalEntry.STATUS_FAILED);
-        entry.setDetails(details);
-        rebuildPendingQueue();
-        OSLogger.log("JournalManager", "Operación fallida: " + operationType + " - " + fileName);
-        return true;
+    public void simulateCrash() {
+        this.isCrashed = true;
+        OSLogger.log("CRASH", "¡Fallo del sistema simulado!");
     }
 
-    public CustomQueue<JournalEntry> recoverPendingOperations() {
-        rebuildPendingQueue();
-        return pendingEntries;
-    }
-
-    public CustomLinkedList<JournalEntry> getHistoryEntries() {
-        return historyEntries;
-    }
-
-    private JournalEntry findLatestEntry(String operationType, String fileName, String status) {
-        for (int i = historyEntries.getSize() - 1; i >= 0; i--) {
-            JournalEntry entry = historyEntries.get(i);
-            if (entry != null
-                    && entry.getOperationType().equalsIgnoreCase(operationType)
-                    && entry.getFileName().equalsIgnoreCase(fileName)
-                    && entry.getStatus().equalsIgnoreCase(status)) {
-                return entry;
+    public void recoverSystem(FileSystemManager fsManager) {
+        OSLogger.log("RECOVERY", "Iniciando recuperación ante fallos...");
+        for (int i = log.getSize() - 1; i >= 0; i--) {
+            JournalEntry entry = log.get(i);
+            if (entry.getStatus().equals("PENDIENTE")) {
+                OSLogger.log("RECOVERY", "Deshaciendo (UNDO) operación: " + entry.getOperation() + " en " + entry.getFileName());
+                
+                // Lógica simple de UNDO: Si se estaba creando, liberar los bloques asignados prematuramente [cite: 82]
+                if (entry.getOperation().equals("CREATE") && entry.getFirstBlockId() != -1) {
+                    fsManager.getDisk().freeBlocks(entry.getFirstBlockId());
+                }
+                // Si la operación era DELETE, en un sistema real restauraríamos la data. 
+                // Para este simulador, evitamos que se borre si no hizo commit.
             }
         }
-        return null;
+        log = new CustomLinkedList<>(); // Limpiar log tras recuperación
+        isCrashed = false;
+        OSLogger.log("RECOVERY", "Sistema recuperado.");
     }
 
-    private void rebuildPendingQueue() {
-        while (!pendingEntries.isEmpty()) {
-            pendingEntries.dequeue();
-        }
-
-        for (int i = 0; i < historyEntries.getSize(); i++) {
-            JournalEntry entry = historyEntries.get(i);
-            if (entry != null && JournalEntry.STATUS_PENDING.equals(entry.getStatus())) {
-                pendingEntries.enqueue(entry);
-            }
-        }
+    public CustomLinkedList<JournalEntry> getLog() {
+        return log;
+    }
+    
+    public boolean isSystemCrashed() {
+        return isCrashed;
     }
 }

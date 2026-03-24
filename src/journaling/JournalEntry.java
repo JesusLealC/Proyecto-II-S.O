@@ -4,73 +4,33 @@
  */
 
 
-/**
- *
- * @author jleal
- */
+
 package journaling;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-
 public class JournalEntry {
-    public static final String STATUS_PENDING = "PENDIENTE";
-    public static final String STATUS_COMPLETED = "COMPLETADO";
-    public static final String STATUS_FAILED = "FALLIDO";
-
-    private String operationType;
+    private String operation; // "CREATE", "DELETE"
     private String fileName;
-    private String status;
-    private String details;
-    private final String timestamp;
+    private int firstBlockId;
+    private String status; // "PENDIENTE", "CONFIRMADA"
 
-    public JournalEntry(String operationType, String fileName, String status) {
-        this(operationType, fileName, status, "");
-    }
-
-    public JournalEntry(String operationType, String fileName, String status, String details) {
-        this.operationType = operationType;
+    public JournalEntry(String operation, String fileName, int firstBlockId) {
+        this.operation = operation;
         this.fileName = fileName;
-        this.status = status;
-        this.details = details;
-        this.timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"));
+        this.firstBlockId = firstBlockId;
+        this.status = "PENDIENTE"; // Inicia como pendiente [cite: 76]
     }
 
-    public String getOperationType() {
-        return operationType;
+    public void commit() {
+        this.status = "CONFIRMADA"; // Se marca confirmada tras el éxito [cite: 78]
     }
 
-    public String getFileName() {
-        return fileName;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public String getDetails() {
-        return details;
-    }
-
-    public void setDetails(String details) {
-        this.details = details;
-    }
-
-    public String getTimestamp() {
-        return timestamp;
-    }
+    public String getStatus() { return status; }
+    public String getOperation() { return operation; }
+    public String getFileName() { return fileName; }
+    public int getFirstBlockId() { return firstBlockId; }
 
     @Override
     public String toString() {
-        return "JournalEntry{" +
-                "operationType='" + operationType + '\'' +
-                ", fileName='" + fileName + '\'' +
-                ", status='" + status + '\'' +
-                ", timestamp='" + timestamp + '\'' +
-                '}';
+        return operation + " '" + fileName + "': " + status;
     }
 }

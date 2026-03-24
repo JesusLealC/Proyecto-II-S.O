@@ -5,86 +5,63 @@
 package process;
 
 import edd.CustomQueue;
-import java.util.ArrayList;
-import java.util.List;
+import edd.CustomLinkedList;
 import util.OSLogger;
+import scheduler.DiskScheduler;
 
 public class Scheduler {
     private final CustomQueue<PCB> colaListos;
     private final CustomQueue<PCB> colaBloqueados;
     private PCB runningProcess;
+    private DiskScheduler diskScheduler;
 
-    public Scheduler() {
+    public Scheduler(DiskScheduler diskScheduler) {
         this.colaListos = new CustomQueue<>();
         this.colaBloqueados = new CustomQueue<>();
         this.runningProcess = null;
+        this.diskScheduler = diskScheduler;
     }
 
     public void agregarProceso(PCB proceso) {
         proceso.setState(ProcessState.READY);
         colaListos.enqueue(proceso);
-        OSLogger.log("Scheduler", "Proceso PID " + proceso.getProcessId() + " agregado a la cola de listos.");
+        OSLogger.log("ProcessScheduler", "PID " + proceso.getProcessId() + " -> READY");
     }
 
-    public PCB despacharSiguiente() {
-        if (colaListos.isEmpty()) {
-            OSLogger.log("Scheduler", "No hay procesos listos para ejecutar.");
-            runningProcess = null;
-            return null;
+    public void despacharSiguiente() {
+        if (runningProcess == null && !colaListos.isEmpty()) {
+            runningProcess = colaListos.dequeue();
+            runningProcess.setState(ProcessState.RUNNING);
+            OSLogger.log("ProcessScheduler", "PID " + runningProcess.getProcessId() + " -> RUNNING");
+            
+            solicitarIO(runningProcess);
         }
-
-        PCB procesoAEjecutar = colaListos.dequeue();
-        procesoAEjecutar.setState(ProcessState.RUNNING);
-        runningProcess = procesoAEjecutar;
-        OSLogger.log("Scheduler", "Despachando a CPU el proceso PID " + procesoAEjecutar.getProcessId());
-        return procesoAEjecutar;
     }
 
-    public void bloquearProceso(PCB proceso) {
-        if (proceso == null) {
-            return;
-        }
-
+    private void solicitarIO(PCB proceso) {
         proceso.setState(ProcessState.BLOCKED);
         colaBloqueados.enqueue(proceso);
-
-        if (runningProcess == proceso) {
-            runningProcess = null;
+        
+        if (diskScheduler != null) {
+            diskScheduler.encolarSolicitud(proceso);
         }
-
-        OSLogger.log("Scheduler", "Proceso PID " + proceso.getProcessId() + " bloqueado.");
+        
+        OSLogger.log("ProcessScheduler", "PID " + proceso.getProcessId() + " -> BLOCKED (E/S Disco)");
+        runningProcess = null;
     }
 
     public void terminarProceso(PCB proceso) {
-        if (proceso == null) {
-            return;
-        }
+        if (proceso == null) return;
 
         proceso.setState(ProcessState.TERMINATED);
-
-        if (runningProcess == proceso) {
-            runningProcess = null;
-        }
-
-        OSLogger.log("Scheduler", "Proceso PID " + proceso.getProcessId() + " terminó su ejecución.");
+        OSLogger.log("ProcessScheduler", "PID " + proceso.getProcessId() + " -> TERMINATED");
     }
 
-    public PCB desbloquearSiguiente() {
-        if (colaBloqueados.isEmpty()) {
-            return null;
-        }
-
-        PCB proceso = colaBloqueados.dequeue();
-        agregarProceso(proceso);
-        OSLogger.log("Scheduler", "Proceso PID " + proceso.getProcessId() + " movido de bloqueados a listos.");
-        return proceso;
-    }
-
-    public List<PCB> getReadyProcessesSnapshot() {
+    public CustomLinkedList<PCB> getReadyProcessesSnapshot() {
         return snapshotQueue(colaListos);
     }
 
-    public List<PCB> getBlockedProcessesSnapshot() {
+    public CustomLinkedList<PCB> getBlockedProcessesSnapshot() {
         return snapshotQueue(colaBloqueados);
     }
 
@@ -92,16 +69,15 @@ public class Scheduler {
         return runningProcess;
     }
 
-    private List<PCB> snapshotQueue(CustomQueue<PCB> queue) {
-        List<PCB> snapshot = new ArrayList<>();
+    private CustomLinkedList<PCB> snapshotQueue(CustomQueue<PCB> queue) {
+        CustomLinkedList<PCB> snapshot = new CustomLinkedList<>();
         int size = queue.size();
 
         for (int i = 0; i < size; i++) {
             PCB process = queue.dequeue();
-            snapshot.add(process);
+            snapshot.addLast(process);
             queue.enqueue(process);
         }
-
         return snapshot;
     }
 }

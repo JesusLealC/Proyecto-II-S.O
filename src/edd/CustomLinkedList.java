@@ -4,8 +4,7 @@
  */
 package edd;
 
-
-public class CustomLinkedList <T> {
+public class CustomLinkedList<T> {
     private Node<T> head;
     private Node<T> tail;
     private int size;
@@ -16,7 +15,6 @@ public class CustomLinkedList <T> {
         this.size = 0;
     }
 
-    // Añadir al final
     public void addLast(T data) {
         Node<T> newNode = new Node<>(data);
         if (isEmpty()) {
@@ -29,7 +27,6 @@ public class CustomLinkedList <T> {
         size++;
     }
 
-    // Remover el primero (útil para las colas)
     public T removeFirst() {
         if (isEmpty()) return null;
         
@@ -44,7 +41,6 @@ public class CustomLinkedList <T> {
         return data;
     }
 
-    // Obtener un elemento por su índice (para recorrer con un for clásico)
     public T get(int index) {
         if (index < 0 || index >= size) return null;
         
@@ -55,7 +51,16 @@ public class CustomLinkedList <T> {
         return current.getData();
     }
     
-    // Eliminar un objeto específico
+    public void set(int index, T data) {
+        if (index < 0 || index >= size) return;
+        
+        Node<T> current = head;
+        for (int i = 0; i < index; i++) {
+            current = current.getNext();
+        }
+        current.setData(data);
+    }
+    
     public boolean remove(T data) {
         Node<T> current = head;
         while (current != null) {
@@ -81,5 +86,3 @@ public class CustomLinkedList <T> {
     public boolean isEmpty() { return size == 0; }
     public int getSize() { return size; }
 }
-
-

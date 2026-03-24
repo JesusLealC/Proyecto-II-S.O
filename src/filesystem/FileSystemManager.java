@@ -4,76 +4,76 @@
  */
 package filesystem;
 
-import java.awt.Color;
+import edd.CustomLinkedList;
 import edd.TreeNode;
-
-/**
- * Conecta el árbol lógico (carpetas) con el disco físico (SimulatedDisk).
- */
-
+import java.awt.Color;
 
 public class FileSystemManager {
-      private TreeNode<FileMetadata> root; // La raíz ("C:\")
+    private TreeNode<FileMetadata> root;
     private SimulatedDisk disk;
 
     public FileSystemManager(SimulatedDisk disk) {
         this.disk = disk;
         
-        // Se crea el directorio raíz por defecto
-        FileMetadata rootMeta = new FileMetadata("Raiz", true, 0, "Administrador", Color.BLACK);
+        FileMetadata rootMeta = new FileMetadata("/", true, 0, "Administrador", Color.BLACK);
         this.root = new TreeNode<>(rootMeta);
     }
 
-    /**
-     * Crea un archivo: le asigna espacio en disco y lo añade al árbol.
-     */
     public boolean createFile(String name, int size, String owner, Color color, TreeNode<FileMetadata> parentFolder) {
         if (disk.getFreeSpace() < size) return false;
 
-        // Pedir espacio al disco
         int firstBlockId = disk.allocateBlocks(size, color);
         if (firstBlockId == -1) return false;
 
-        // Crear metadata y guardar el inicio de la cadena
         FileMetadata newFileMeta = new FileMetadata(name, false, size, owner, color);
         newFileMeta.setFirstBlockId(firstBlockId);
 
-        // Añadir al árbol
         TreeNode<FileMetadata> newNode = new TreeNode<>(newFileMeta);
         parentFolder.addChild(newNode);
 
         return true;
     }
 
-    /**
-     * Crea un directorio (no ocupa espacio en el SD, solo en el árbol).
-     */
     public void createDirectory(String name, String owner, TreeNode<FileMetadata> parentFolder) {
         FileMetadata newDirMeta = new FileMetadata(name, true, 0, owner, Color.DARK_GRAY);
         TreeNode<FileMetadata> newDirNode = new TreeNode<>(newDirMeta);
         parentFolder.addChild(newDirNode);
     }
 
-    /**
-     * Borra un archivo: libera el disco y lo saca del árbol.
-     */
-    public boolean deleteFile(TreeNode<FileMetadata> fileNode) {
-        if (fileNode.getData().isDirectory()) return false; // Carpetas tienen otra lógica
+    // Método añadido para cumplir con la operación "Actualizar" (Renombrar) solicitada en el proyecto
+    public boolean renameNode(TreeNode<FileMetadata> node, String newName) {
+        if (node == null || node == root) return false;
+        
+        node.getData().setName(newName);
+        return true;
+    }
 
-        int firstBlock = fileNode.getData().getFirstBlockId();
-        if (firstBlock != -1) {
-            disk.freeBlocks(firstBlock);
+    // Método modificado para soportar la eliminación recursiva de directorios y la liberación de bloques
+    public boolean deleteNode(TreeNode<FileMetadata> node) {
+        if (node == null || node == root) return false;
+
+        if (node.getData().isDirectory()) {
+            CustomLinkedList<TreeNode<FileMetadata>> children = node.getChildren();
+            
+            while (!children.isEmpty()) {
+                TreeNode<FileMetadata> child = children.get(0);
+                deleteNode(child); 
+            }
+        } else {
+            int firstBlock = node.getData().getFirstBlockId();
+            if (firstBlock != -1) {
+                disk.freeBlocks(firstBlock);
+            }
         }
 
-        TreeNode<FileMetadata> parent = fileNode.getParent();
+        TreeNode<FileMetadata> parent = node.getParent();
         if (parent != null) {
-            parent.getChildren().remove(fileNode); // Usamos el remove de nuestra CustomLinkedList
+            parent.getChildren().remove(node);
         }
+
         return true;
     }
 
     public TreeNode<FileMetadata> getRoot() { return root; }
     public SimulatedDisk getDisk() { return disk; }
 }
-
-

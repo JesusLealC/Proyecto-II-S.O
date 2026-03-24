@@ -1,39 +1,61 @@
 /*
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
-/**
- *
- * @author jleal
- */
+*/
 
 package scheduler;
 
-import java.util.ArrayList;
-import java.util.List;
+import edd.CustomLinkedList;
+import edd.CustomQueue;
+import process.PCB;
 
 public class SSTFScheduler implements DiskScheduler {
+    private CustomQueue<PCB> colaSolicitudes;
+
+    public SSTFScheduler() {
+        this.colaSolicitudes = new CustomQueue<>();
+    }
+
     @Override
-    public List<Integer> calculateRoute(List<Integer> requestedBlocks, int currentPosition) {
-        List<Integer> pending = new ArrayList<>(requestedBlocks);
-        List<Integer> route = new ArrayList<>();
+    public void encolarSolicitud(PCB proceso) {
+        colaSolicitudes.enqueue(proceso);
+    }
+
+    @Override
+    public PCB procesarSiguiente(int posicionActualCabezal) {
+        if (colaSolicitudes.isEmpty()) {
+            return null;
+        }
+        return colaSolicitudes.dequeue();
+    }
+
+    @Override
+    public CustomLinkedList<Integer> calculateRoute(CustomLinkedList<Integer> requestedBlocks, int currentPosition) {
+        CustomLinkedList<Integer> pending = new CustomLinkedList<>();
+        for (int i = 0; i < requestedBlocks.getSize(); i++) {
+            pending.addLast(requestedBlocks.get(i));
+        }
+
+        CustomLinkedList<Integer> route = new CustomLinkedList<>();
         int head = currentPosition;
 
         while (!pending.isEmpty()) {
-            int nearestIndex = 0;
-            int nearestDistance = Math.abs(pending.get(0) - head);
+            int nearestValue = pending.get(0);
+            int nearestDistance = Math.abs(nearestValue - head);
 
-            for (int i = 1; i < pending.size(); i++) {
-                int distance = Math.abs(pending.get(i) - head);
+            for (int i = 1; i < pending.getSize(); i++) {
+                int currentValue = pending.get(i);
+                int distance = Math.abs(currentValue - head);
                 if (distance < nearestDistance) {
                     nearestDistance = distance;
-                    nearestIndex = i;
+                    nearestValue = currentValue;
                 }
             }
 
-            int nextBlock = pending.remove(nearestIndex);
-            route.add(nextBlock);
-            head = nextBlock;
+            // Usamos el método remove(T data) de tu CustomLinkedList enviando el valor, no el índice
+            pending.remove(nearestValue);
+            route.addLast(nearestValue);
+            head = nearestValue;
         }
 
         return route;

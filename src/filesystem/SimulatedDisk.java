@@ -5,14 +5,9 @@
 package filesystem;
 import java.awt.Color;
 
-/**
- * El Hardware del almacenamiento. Maneja el arreglo de bloques.
- */
-
-
 public class SimulatedDisk {
-      private Block[] blocks;
-    private int headPosition; // Posición de la cabeza de lectura/escritura
+    private Block[] blocks;
+    private int headPosition;
     private int totalCapacity;
 
     public SimulatedDisk(int totalCapacity) {
@@ -20,16 +15,11 @@ public class SimulatedDisk {
         this.blocks = new Block[totalCapacity];
         this.headPosition = 0;
 
-        // Inicializar el disco con bloques vacíos
         for (int i = 0; i < totalCapacity; i++) {
             blocks[i] = new Block(i);
         }
     }
 
-    /**
-     * Asignación Encadenada: Busca espacio y enlaza los bloques.
-     * Retorna el ID del primer bloque, o -1 si no hay espacio.
-     */
     public int allocateBlocks(int blocksNeeded, Color fileColor) {
         if (getFreeSpace() < blocksNeeded) return -1;
 
@@ -47,19 +37,21 @@ public class SimulatedDisk {
                 }
 
                 if (previousBlock != -1) {
-                    blocks[previousBlock].setNextBlockId(i); // Encadenar
+                    blocks[previousBlock].setNextBlockId(i); 
                 }
 
                 previousBlock = i;
                 blocksAllocated++;
             }
         }
+
+        if (previousBlock != -1) {
+            blocks[previousBlock].setNextBlockId(-1); 
+        }
+
         return firstAllocatedBlock;
     }
 
-    /**
-     * Libera una cadena de bloques a partir de su bloque inicial.
-     */
     public void freeBlocks(int firstBlockId) {
         int currentBlockId = firstBlockId;
         while (currentBlockId != -1) {
@@ -83,5 +75,4 @@ public class SimulatedDisk {
     public int getHeadPosition() { return headPosition; }
     public void setHeadPosition(int headPosition) { this.headPosition = headPosition; }
     public int getTotalCapacity() { return totalCapacity; }
-
 }

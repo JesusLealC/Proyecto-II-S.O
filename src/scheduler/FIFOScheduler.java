@@ -4,19 +4,43 @@
  */
 
 
-/**
- *
- * @author jleal
- */
-package scheduler;
 
-import java.util.ArrayList;
-import java.util.List;
+package scheduler;
+import edd.CustomLinkedList;
+import edd.CustomQueue;
+import process.PCB;
 
 public class FIFOScheduler implements DiskScheduler {
+    
+    private CustomQueue<PCB> colaSolicitudes;
+
+    public FIFOScheduler() {
+        this.colaSolicitudes = new CustomQueue<>();
+    }
+
     @Override
-    public List<Integer> calculateRoute(List<Integer> requestedBlocks, int currentPosition) {
-        return new ArrayList<>(requestedBlocks);
+    public void encolarSolicitud(PCB proceso) {
+        colaSolicitudes.enqueue(proceso);
+    }
+
+    @Override
+    public PCB procesarSiguiente(int posicionActualCabezal) {
+        if (colaSolicitudes.isEmpty()) {
+            return null;
+        }
+        // En FIFO, simplemente sacamos el primero que llegó a la cola
+        return colaSolicitudes.dequeue();
+    }
+
+    @Override
+    public CustomLinkedList<Integer> calculateRoute(CustomLinkedList<Integer> requestedBlocks, int currentPosition) {
+        CustomLinkedList<Integer> route = new CustomLinkedList<>();
+        
+        for (int i = 0; i < requestedBlocks.getSize(); i++) {
+            route.addLast(requestedBlocks.get(i));
+        }
+        
+        return route;
     }
 
     @Override

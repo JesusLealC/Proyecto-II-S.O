@@ -2,14 +2,10 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-/**
- *
- * @author jleal
- */
-package gui;
 
+package gui;
+import edd.CustomLinkedList;
 import java.awt.BorderLayout;
-import java.util.List;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
@@ -24,7 +20,7 @@ public class ProcessTable extends JPanel {
 
     public ProcessTable(Scheduler scheduler) {
         this.scheduler = scheduler;
-        this.model = new DefaultTableModel(new Object[]{"PID", "Estado", "Prioridad", "PC"}, 0) {
+        this.model = new DefaultTableModel(new Object[]{"PID", "Operación", "Archivo", "Estado"}, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
@@ -34,33 +30,32 @@ public class ProcessTable extends JPanel {
 
         setLayout(new BorderLayout());
         add(new JScrollPane(table), BorderLayout.CENTER);
-        refresh();
     }
 
     public void refresh() {
         model.setRowCount(0);
-
-        addProcesses(scheduler.getReadyProcessesSnapshot());
-        addProcesses(scheduler.getBlockedProcessesSnapshot());
-
+        
         PCB running = scheduler.getRunningProcess();
         if (running != null) {
             addProcess(running);
         }
+
+        addProcesses(scheduler.getReadyProcessesSnapshot());
+        addProcesses(scheduler.getBlockedProcessesSnapshot());
     }
 
-    private void addProcesses(List<PCB> processes) {
-        for (PCB process : processes) {
-            addProcess(process);
+    private void addProcesses(CustomLinkedList<PCB> processes) {
+        for (int i = 0; i < processes.getSize(); i++) {
+            addProcess(processes.get(i)); 
         }
     }
 
     private void addProcess(PCB process) {
         model.addRow(new Object[]{
             process.getProcessId(),
-            process.getState(),
-            process.getPriority(),
-            process.getProgramCounter()
+            process.getOperation(),
+            process.getFileName(),
+            process.getState()
         });
     }
 }

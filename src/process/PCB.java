@@ -7,21 +7,26 @@ package process;
 
 public class PCB {
     private int processId;
-    private ProcessState state;
-    private int programCounter;
-    private int priority;
-    private int[] registers;
+    private ProcessState state; 
+    
+    // --- NUEVOS ATRIBUTOS PARA E/S DE DISCO ---
+    private String operation; // "CREATE", "READ", "UPDATE", "DELETE"
+    private String fileName;  // Archivo sobre el que se hará la operación
+    private int fileSizeInBlocks; // Solo útil si la operation es "CREATE"
+    private String userMode; // "ADMIN" o "USER" para validar permisos
 
-    // Constructor
-    public PCB(int processId, int priority) {
+    // Constructor actualizado
+    public PCB(int processId, String operation, String fileName, int fileSizeInBlocks, String userMode) {
         this.processId = processId;
-        this.state = ProcessState.NEW;
-        this.programCounter = 0;
-        this.priority = priority;
-        this.registers = new int[4];
+        // El estado inicial según el PDF debe ser "nuevo"
+        this.state = ProcessState.NEW; 
+        this.operation = operation;
+        this.fileName = fileName;
+        this.fileSizeInBlocks = fileSizeInBlocks;
+        this.userMode = userMode;
     }
 
-    // --- GETTERS Y SETTERS que usa el Scheduler ---
+    // --- GETTERS Y SETTERS ---
     public int getProcessId() {
         return processId;
     }
@@ -34,25 +39,24 @@ public class PCB {
         this.state = state;
     }
 
-    public int getProgramCounter() {
-        return programCounter;
+    public String getOperation() {
+        return operation;
     }
 
-    public void setProgramCounter(int programCounter) {
-        this.programCounter = programCounter;
+    public String getFileName() {
+        return fileName;
     }
 
-    public int getPriority() {
-        return priority;
+    public int getFileSizeInBlocks() {
+        return fileSizeInBlocks;
     }
 
-    public void setPriority(int priority) {
-        this.priority = priority;
+    public String getUserMode() {
+        return userMode;
     }
 
     @Override
     public String toString() {
-        return "PCB [PID=" + processId + ", Estado=" + state + "]";
+        return "PID: " + processId + " | Op: " + operation + " '" + fileName + "' | Estado: " + state;
     }
-
 }

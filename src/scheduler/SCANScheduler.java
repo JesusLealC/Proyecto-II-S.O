@@ -3,19 +3,17 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
 
-/**
- *
- * @author jleal
- */
+
 
 package scheduler;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import edd.CustomLinkedList;
+import edd.CustomQueue;
+import process.PCB;
 
 public class SCANScheduler implements DiskScheduler {
     private boolean moveRightFirst;
+    private CustomQueue<PCB> colaSolicitudes;
 
     public SCANScheduler() {
         this(true);
@@ -23,36 +21,80 @@ public class SCANScheduler implements DiskScheduler {
 
     public SCANScheduler(boolean moveRightFirst) {
         this.moveRightFirst = moveRightFirst;
+        this.colaSolicitudes = new CustomQueue<>();
     }
 
     @Override
-    public List<Integer> calculateRoute(List<Integer> requestedBlocks, int currentPosition) {
-        List<Integer> sorted = new ArrayList<>(requestedBlocks);
-        Collections.sort(sorted);
+    public void encolarSolicitud(PCB proceso) {
+        colaSolicitudes.enqueue(proceso);
+    }
 
-        List<Integer> left = new ArrayList<>();
-        List<Integer> right = new ArrayList<>();
+    @Override
+    public PCB procesarSiguiente(int posicionActualCabezal) {
+        if (colaSolicitudes.isEmpty()) {
+            return null;
+        }
+        
+        // En una implementación completa de SCAN, aquí buscarías el PCB 
+        // cuyo bloque objetivo coincida con el siguiente paso de la ruta.
+        // Por ahora, retorna el desencolado básico para cumplir la interfaz.
+        return colaSolicitudes.dequeue();
+    }
 
-        for (Integer block : sorted) {
+    @Override
+    public CustomLinkedList<Integer> calculateRoute(CustomLinkedList<Integer> requestedBlocks, int currentPosition) {
+        CustomLinkedList<Integer> route = new CustomLinkedList<>();
+        if (requestedBlocks.getSize() == 0) return route;
+
+        CustomLinkedList<Integer> sorted = new CustomLinkedList<>();
+        for (int i = 0; i < requestedBlocks.getSize(); i++) {
+            sorted.addLast(requestedBlocks.get(i));
+        }
+        
+        sortList(sorted);
+
+        CustomLinkedList<Integer> left = new CustomLinkedList<>();
+        CustomLinkedList<Integer> right = new CustomLinkedList<>();
+
+        for (int i = 0; i < sorted.getSize(); i++) {
+            int block = sorted.get(i);
             if (block < currentPosition) {
-                left.add(block);
+                left.addLast(block);
             } else {
-                right.add(block);
+                right.addLast(block);
             }
         }
 
-        List<Integer> route = new ArrayList<>();
         if (moveRightFirst) {
-            route.addAll(right);
-            Collections.reverse(left);
-            route.addAll(left);
+            for (int i = 0; i < right.getSize(); i++) {
+                route.addLast(right.get(i));
+            }
+            for (int i = left.getSize() - 1; i >= 0; i--) {
+                route.addLast(left.get(i));
+            }
         } else {
-            Collections.reverse(left);
-            route.addAll(left);
-            route.addAll(right);
+            for (int i = left.getSize() - 1; i >= 0; i--) {
+                route.addLast(left.get(i));
+            }
+            for (int i = 0; i < right.getSize(); i++) {
+                route.addLast(right.get(i));
+            }
         }
 
         return route;
+    }
+
+    private void sortList(CustomLinkedList<Integer> list) {
+        int n = list.getSize();
+        for (int i = 0; i < n - 1; i++) {
+            for (int j = 0; j < n - i - 1; j++) {
+                if (list.get(j) > list.get(j + 1)) {
+                    int temp = list.get(j);
+                    list.set(j, list.get(j + 1));
+                    list.set(j + 1, temp);
+                }
+            }
+        }
     }
 
     public boolean isMoveRightFirst() {
