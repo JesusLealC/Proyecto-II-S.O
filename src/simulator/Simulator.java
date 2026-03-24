@@ -4,17 +4,37 @@
  */
 package simulator;
 
-/**
- *
- * @author jesus rodriguez
- */
-public class Simulator {
+import edd.TreeNode;
+import filesystem.FileMetadata;
+import filesystem.FileSystemManager;
+import filesystem.SimulatedDisk;
+import gui.MainWindow;
+import java.awt.Color;
+import javax.swing.SwingUtilities;
+import process.PCB;
+import process.Scheduler;
+import util.Config;
 
-    /**
-     * @param args the command line arguments
-     */
+public class Simulator {
     public static void main(String[] args) {
-        // TODO code application logic here
+        SwingUtilities.invokeLater(() -> {
+            SimulatedDisk disk = new SimulatedDisk(Config.DISK_SIZE);
+            FileSystemManager fileSystemManager = new FileSystemManager(disk);
+            Scheduler scheduler = new Scheduler();
+
+            TreeNode<FileMetadata> root = fileSystemManager.getRoot();
+            fileSystemManager.createDirectory("Documentos", "Administrador", root);
+            fileSystemManager.createFile("tarea.txt", 4, "Usuario", Color.CYAN, root);
+            fileSystemManager.createFile("kernel.sys", 6, "Administrador", Color.ORANGE, root);
+
+            scheduler.agregarProceso(new PCB(1, 5));
+            scheduler.agregarProceso(new PCB(2, 2));
+            scheduler.agregarProceso(new PCB(3, 8));
+            scheduler.despacharSiguiente();
+
+            MainWindow window = new MainWindow(fileSystemManager, scheduler);
+            window.setVisible(true);
+            window.refreshAll();
+        });
     }
-    
 }

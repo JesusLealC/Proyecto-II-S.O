@@ -5,51 +5,103 @@
 package process;
 
 import edd.CustomQueue;
+import java.util.ArrayList;
+import java.util.List;
+import util.OSLogger;
 
 public class Scheduler {
-    // Usamos tu CustomQueue y le decimos que va a guardar objetos tipo PCB
-    private CustomQueue<PCB> colaListos;     
-    private CustomQueue<PCB> colaBloqueados; 
-    
+    private final CustomQueue<PCB> colaListos;
+    private final CustomQueue<PCB> colaBloqueados;
+    private PCB runningProcess;
+
     public Scheduler() {
         this.colaListos = new CustomQueue<>();
         this.colaBloqueados = new CustomQueue<>();
-    }
-    
-    // 1. Meter un proceso nuevo a la fila de Listos
-    public void agregarProceso(PCB proceso) {
-        proceso.setState(ProcessState.READY); // Cambia a LISTO
-        colaListos.enqueue(proceso);          // Usamos TU método enqueue
-        System.out.println("Proceso PID " + proceso.getProcessId() + " agregado a la Cola de Listos.");
-    }
-    
-    // 2. Sacar al siguiente proceso y mandarlo a ejecutar
-    public PCB despacharSiguiente() {
-        if (!colaListos.isEmpty()) { // Usamos TU método isEmpty
-            // Sacamos el proceso (tu CustomQueue ya sabe que devuelve un PCB)
-            PCB procesoA_Ejecutar = colaListos.dequeue(); // Usamos TU método dequeue
-            
-            procesoA_Ejecutar.setState(ProcessState.RUNNING);
-            System.out.println("Despachando a CPU: Proceso PID " + procesoA_Ejecutar.getProcessId());
-            
-            return procesoA_Ejecutar;
-        } else {
-            System.out.println("No hay procesos listos para ejecutar.");
-            return null;
-        }
-    }
-    
-    // 3. Bloquear un proceso (pasa de RUNNING a BLOCKED)
-    public void bloquearProceso(PCB proceso) {
-        proceso.setState(ProcessState.BLOCKED);
-        colaBloqueados.enqueue(proceso);
-        System.out.println("Proceso PID " + proceso.getProcessId() + " ha sido BLOQUEADO.");
-    }
-    
-    // 4. Terminar un proceso
-    public void terminarProceso(PCB proceso) {
-        proceso.setState(ProcessState.TERMINATED);
-        System.out.println("Proceso PID " + proceso.getProcessId() + " ha TERMINADO su ejecución.");
+        this.runningProcess = null;
     }
 
+    public void agregarProceso(PCB proceso) {
+        proceso.setState(ProcessState.READY);
+        colaListos.enqueue(proceso);
+        OSLogger.log("Scheduler", "Proceso PID " + proceso.getProcessId() + " agregado a la cola de listos.");
+    }
+
+    public PCB despacharSiguiente() {
+        if (colaListos.isEmpty()) {
+            OSLogger.log("Scheduler", "No hay procesos listos para ejecutar.");
+            runningProcess = null;
+            return null;
+        }
+
+        PCB procesoAEjecutar = colaListos.dequeue();
+        procesoAEjecutar.setState(ProcessState.RUNNING);
+        runningProcess = procesoAEjecutar;
+        OSLogger.log("Scheduler", "Despachando a CPU el proceso PID " + procesoAEjecutar.getProcessId());
+        return procesoAEjecutar;
+    }
+
+    public void bloquearProceso(PCB proceso) {
+        if (proceso == null) {
+            return;
+        }
+
+        proceso.setState(ProcessState.BLOCKED);
+        colaBloqueados.enqueue(proceso);
+
+        if (runningProcess == proceso) {
+            runningProcess = null;
+        }
+
+        OSLogger.log("Scheduler", "Proceso PID " + proceso.getProcessId() + " bloqueado.");
+    }
+
+    public void terminarProceso(PCB proceso) {
+        if (proceso == null) {
+            return;
+        }
+
+        proceso.setState(ProcessState.TERMINATED);
+
+        if (runningProcess == proceso) {
+            runningProcess = null;
+        }
+
+        OSLogger.log("Scheduler", "Proceso PID " + proceso.getProcessId() + " terminó su ejecución.");
+    }
+
+    public PCB desbloquearSiguiente() {
+        if (colaBloqueados.isEmpty()) {
+            return null;
+        }
+
+        PCB proceso = colaBloqueados.dequeue();
+        agregarProceso(proceso);
+        OSLogger.log("Scheduler", "Proceso PID " + proceso.getProcessId() + " movido de bloqueados a listos.");
+        return proceso;
+    }
+
+    public List<PCB> getReadyProcessesSnapshot() {
+        return snapshotQueue(colaListos);
+    }
+
+    public List<PCB> getBlockedProcessesSnapshot() {
+        return snapshotQueue(colaBloqueados);
+    }
+
+    public PCB getRunningProcess() {
+        return runningProcess;
+    }
+
+    private List<PCB> snapshotQueue(CustomQueue<PCB> queue) {
+        List<PCB> snapshot = new ArrayList<>();
+        int size = queue.size();
+
+        for (int i = 0; i < size; i++) {
+            PCB process = queue.dequeue();
+            snapshot.add(process);
+            queue.enqueue(process);
+        }
+
+        return snapshot;
+    }
 }
