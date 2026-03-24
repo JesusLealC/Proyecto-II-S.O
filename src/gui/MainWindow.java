@@ -16,6 +16,7 @@ import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane; // Añadido para las ventanas emergentes
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
@@ -170,6 +171,63 @@ public class MainWindow extends JFrame {
         verticalMainSplit.setDividerSize(5);
         
         add(verticalMainSplit, BorderLayout.CENTER);
+
+        // ==========================================
+        // --- ACCIONES DE LOS BOTONES (LISTENERS) ---
+        // ==========================================
+
+        btnCrearArch.addActionListener(e -> {
+            String nombre = JOptionPane.showInputDialog(this, "Nombre del nuevo archivo:");
+            if (nombre != null && !nombre.trim().isEmpty()) {
+                String sizeStr = JOptionPane.showInputDialog(this, "Tamaño en bloques:");
+                try {
+                    int size = Integer.parseInt(sizeStr);
+                    
+                    // DESCOMENTAR Y AJUSTAR EL NOMBRE DEL MÉTODO DE TU FileSystemManager:
+                    // simulator.getFsManager().crearArchivo(nombre, size); 
+                    
+                    OSLogger.log("UI", "Solicitud de creación de archivo: " + nombre + " (" + size + " bloques)");
+                    
+                    // DESCOMENTAR PARA AVISAR AL JOURNAL:
+                    // simulator.getJournalManager().logOperation("CREATE", nombre, size);
+                    
+                } catch (NumberFormatException ex) {
+                    JOptionPane.showMessageDialog(this, "Error: El tamaño debe ser un número entero.", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+
+        btnCrearDir.addActionListener(e -> {
+            String nombre = JOptionPane.showInputDialog(this, "Nombre del nuevo directorio:");
+            if (nombre != null && !nombre.trim().isEmpty()) {
+                
+                // DESCOMENTAR Y AJUSTAR:
+                // simulator.getFsManager().crearDirectorio(nombre);
+                
+                OSLogger.log("UI", "Solicitud de creación de directorio: " + nombre);
+            }
+        });
+
+        btnEliminar.addActionListener(e -> {
+            String nombre = JOptionPane.showInputDialog(this, "Nombre del archivo/directorio a eliminar:");
+            if (nombre != null && !nombre.trim().isEmpty()) {
+                
+                // DESCOMENTAR Y AJUSTAR:
+                // simulator.getFsManager().eliminar(nombre);
+                
+                OSLogger.log("UI", "Solicitud de eliminación: " + nombre);
+            }
+        });
+
+        btnSimularFallo.addActionListener(e -> {
+            int confirm = JOptionPane.showConfirmDialog(this, "¿Seguro que deseas simular un fallo del sistema?", "Alerta Crítica", JOptionPane.YES_NO_OPTION);
+            if (confirm == JOptionPane.YES_OPTION) {
+                OSLogger.log("SISTEMA", "¡FALLO CRÍTICO SIMULADO!");
+                
+                // DESCOMENTAR SI TIENES ESTE MÉTODO EN EL JOURNAL:
+                // simulator.getJournalManager().simularFallo();
+            }
+        });
     }
 
     public void refreshAll() {
